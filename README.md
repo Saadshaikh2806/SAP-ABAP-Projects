@@ -1,7 +1,7 @@
 # Sales Order Interactive ALV Report
 
 ## 📋 Project Overview
-**Objective:** Developed a comprehensive ALV report to track Sales Orders by Customer, Date, and Order Type. This tool helps the sales team quickly analyze daily booking data without running standard T-Codes.
+**Objective:** Developed a comprehensive ALV report to track Sales Orders by Sales Organization, Customer, Date, and Order Type. This tool helps the sales team quickly analyze daily booking data without running standard T-Codes.
 
 ## 📸 Output Screenshots
 
