@@ -1,0 +1,133 @@
+report ZSAAD_BDC
+       no standard page heading line-size 255.
+
+types : begin of ty_mat,
+          MATNR type MATNR,
+          MTART type MTART,
+          MBRSH TYPE MBRSH,
+          MATKL TYPE MATKL,
+          MEINS TYPE MEINS,
+        END OF TY_MAT.
+
+data : IT_MAT TYPE TABLE OF TY_MAT,
+       WA_MAT TYPE TY_MAT.
+
+DATA : TY_FILE TYPE STRING,
+       it_message  type string.
+
+DATA:   IT_BDCDATA TYPE TABLE OF BDCDATA,
+        WA_BDCDATA TYPE BDCDATA.
+
+DATA:   it_messtab type table of BDCMSGCOLL,
+        wa_messtab type BDCMSGCOLL.
+
+PARAMETERS : P_FILE TYPE LOCALFILE.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR P_file.
+
+  CALL FUNCTION 'F4_FILENAME'
+    EXPORTING
+      PROGRAM_NAME  = SY-CPROG
+      DYNPRO_NUMBER = SY-DYNNR
+      FIELD_NAME    = ' '
+    IMPORTING
+      FILE_NAME     = P_file.
+
+START-OF-SELECTION.
+
+TY_FILE = P_FILE.
+
+CALL FUNCTION 'GUI_UPLOAD'
+  EXPORTING
+    filename                = TY_FILE
+    FILETYPE                = 'ASC'
+    HAS_FIELD_SEPARATOR     = 'X'
+  tables
+    data_tab                = it_mat
+  EXCEPTIONS
+    FILE_OPEN_ERROR         = 1
+    FILE_READ_ERROR         = 2
+    NO_BATCH                = 3
+    GUI_REFUSE_FILETRANSFER = 4
+    INVALID_TYPE            = 5
+    NO_AUTHORITY            = 6
+    UNKNOWN_ERROR           = 7
+    BAD_DATA_FORMAT         = 8
+    HEADER_NOT_ALLOWED      = 9
+    SEPARATOR_NOT_ALLOWED   = 10
+    HEADER_TOO_LONG         = 11
+    UNKNOWN_DP_ERROR        = 12
+    ACCESS_DENIED           = 13
+    DP_OUT_OF_MEMORY        = 14
+    DISK_FULL               = 15
+    DP_TIMEOUT              = 16
+    OTHERS                  = 17.
+
+IF sy-subrc <> 0.
+  " Handle upload error
+ENDIF.
+
+* Processing BDC
+LOOP AT IT_MAT INTO WA_MAT.
+
+  perform bdc_dynpro using 'SAPLMGMM' '0060'.
+  perform bdc_field using 'BDC_CURSOR' 'RMMG1-MTART'.
+  perform bdc_field using 'BDC_OKCODE' '=ENTR'.
+  perform bdc_field using 'RMMG1-MATNR' wa_mat-matnr.
+  perform bdc_field using 'RMMG1-MBRSH' wa_mat-mbrsh.
+  perform bdc_field using 'RMMG1-MTART' wa_mat-mtart.
+
+  perform bdc_dynpro using 'SAPLMGMM' '0070'.
+  perform bdc_field using 'BDC_CURSOR' 'MSICHTAUSW-DYTXT(01)'.
+  perform bdc_field using 'BDC_OKCODE' '=ENTR'.
+  perform bdc_field using 'MSICHTAUSW-KZSEL(01)' 'X'.
+
+  perform bdc_dynpro using 'SAPLMGMM' '4004'.
+  perform bdc_field using 'BDC_OKCODE' '=BU'.
+  perform bdc_field using 'MAKT-MAKTX' wa_mat-matkl.
+  perform bdc_field using 'MARA-MATKL' wa_mat-matkl.
+  perform bdc_field using 'MARA-MEINS' wa_mat-meins.
+
+  call TRANSACTION 'MM01' using it_bdcdata mode 'A' update 'S' MESSAGES INTO it_messtab.
+
+  refresh : it_bdcdata.
+
+ENDLOOP.
+
+loop at it_messtab into wa_messtab.
+
+  CALL FUNCTION 'MESSAGE_TEXT_BUILD'
+    EXPORTING
+      msgid               = wa_messtab-msgid
+      msgnr               = wa_messtab-msgnr
+      MSGV1               = wa_messtab-msgv1
+      MSGV2               = wa_messtab-msgv2
+      MSGV3               = wa_messtab-msgv3
+      MSGV4               = wa_messtab-msgv4
+    IMPORTING
+      MESSAGE_TEXT_OUTPUT = it_message.
+
+  write : / it_message.
+
+ENDLOOP.
+
+*----------------------------------------------------------------------
+* Start new screen
+*----------------------------------------------------------------------
+FORM BDC_DYNPRO USING PROGRAM DYNPRO.
+  CLEAR WA_BDCDATA.
+  WA_BDCDATA-PROGRAM  = PROGRAM.
+  WA_BDCDATA-DYNPRO   = DYNPRO.
+  WA_BDCDATA-DYNBEGIN = 'X'.
+  APPEND WA_BDCDATA TO IT_BDCDATA.
+ENDFORM.
+
+*----------------------------------------------------------------------
+* Insert field
+*----------------------------------------------------------------------
+FORM BDC_FIELD USING FNAM FVAL.
+  CLEAR WA_BDCDATA.
+  WA_BDCDATA-FNAM = FNAM.
+  WA_BDCDATA-FVAL = FVAL.
+  APPEND WA_BDCDATA TO IT_BDCDATA.
+ENDFORM.
