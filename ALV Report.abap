@@ -1,0 +1,103 @@
+*----------------------------------------------------------------------
+* Report  ZALV_RESUME_PROJECT
+*----------------------------------------------------------------------
+REPORT ZALV_RESUME_PROJECT.
+
+TABLES : VBAK , VBAP , KNA1.
+
+SELECT-OPTIONS: S_VKORG FOR VBAK-VKORG,
+                S_ERDAT FOR VBAK-ERDAT,
+                S_AUART FOR VBAK-AUART,
+                S_KUNNR FOR VBAK-KUNNR.
+
+TYPES : BEGIN OF TY_SAAD_SALES,
+          NAME1 TYPE KNA1-NAME1,
+          VBELN TYPE VBAK-VBELN,
+          AUART TYPE VBAK-AUART,
+          KUNNR TYPE VBAK-KUNNR,
+          ERNAM TYPE VBAK-ERNAM,
+          ERDAT TYPE VBAK-ERDAT,
+          NETWR TYPE VBAP-NETWR,
+        END OF TY_SAAD_SALES.
+
+DATA : IT_SALES   TYPE TABLE OF TY_SAAD_SALES,
+       WA_SALES   TYPE TY_SAAD_SALES,
+       IT_FIELDCAT TYPE SLIS_T_FIELDCAT_ALV,
+       WA_FIELDCAT TYPE SLIS_FIELDCAT_ALV.
+
+PERFORM SELECT.
+PERFORM BUILD_CATALOG.
+PERFORM DISPAY_ALV.
+
+*----------------------------------------------------------------------
+* START OF SELECTION
+*----------------------------------------------------------------------
+START-OF-SELECTION.
+
+FORM SELECT.
+  SELECT KNA1-NAME1,
+         VBAK-VBELN,
+         VBAK-AUART,
+         VBAK-KUNNR,
+         VBAK-ERNAM,
+         VBAK-ERDAT,
+         VBAP-NETWR
+    FROM VBAK INNER JOIN VBAP
+      ON VBAK-VBELN = VBAP-VBELN
+     INNER JOIN KNA1 ON KNA1-KUNNR = VBAK-KUNNR
+    INTO TABLE @IT_SALES
+    WHERE VBAK-VKORG IN @S_VKORG
+      AND VBAK-ERDAT IN @S_ERDAT
+      AND VBAK-AUART IN @S_AUART
+      AND VBAK-KUNNR IN @S_KUNNR.
+
+  IF IT_SALES IS INITIAL.
+    MESSAGE 'NO DATA FETCHED' TYPE 'I'.
+  ENDIF.
+
+ENDFORM.
+
+*----------------------------------------------------------------------
+* BUILD CATALOG
+*----------------------------------------------------------------------
+FORM BUILD_CATALOG.
+  CLEAR IT_FIELDCAT.
+
+  DEFINE ADD_FIELD.
+    WA_FIELDCAT-FIELDNAME = &1.
+    WA_FIELDCAT-SELTEXT_M = &2.
+    WA_FIELDCAT-COL_POS   = &3.
+    APPEND WA_FIELDCAT TO IT_FIELDCAT.
+    CLEAR WA_FIELDCAT.
+  END-OF-DEFINITION.
+
+  ADD_FIELD 'NAME1' 'CUSTOMER NAME'       1.
+  ADD_FIELD 'KUNNR' 'CUSTOMER NUMBER'     2.
+  ADD_FIELD 'VBELN' 'SALES DOC'           3.
+  ADD_FIELD 'NETWR' 'NET VALUE'           4.
+  ADD_FIELD 'AUART' 'ORDER TYPE'          5.
+  ADD_FIELD 'ERNAM' 'CREATED BY'          6.
+  ADD_FIELD 'ERDAT' 'CREATED ON'          7.
+
+ENDFORM.
+
+*----------------------------------------------------------------------
+* DISPLAY ALV
+*----------------------------------------------------------------------
+FORM DISPAY_ALV.
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+      I_CALLBACK_PROGRAM   = SY-REPID
+      IT_FIELDCAT          = IT_FIELDCAT
+      I_CALLBACK_USER_COMMAND = 'USER_COMMAND'
+    TABLES
+      T_OUTTAB             = IT_SALES
+    EXCEPTIONS
+      PROGRAM_ERROR        = 1
+      OTHERS               = 2.
+
+  IF SY-SUBRC <> 0.
+    MESSAGE 'ALV PROCESS FAILED' TYPE 'I'.
+  ENDIF.
+
+ENDFORM.
