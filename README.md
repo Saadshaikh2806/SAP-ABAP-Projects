@@ -7,11 +7,11 @@
 
 ### 1. Selection Screen (Input)
 *User filters data by Sales Org, Date Range, or Customer Number.*
-![Selection Screen](ALV1.png)
+![Selection Screen](Alv1.png)
 
 ### 2. ALV Grid Output (Result)
 *Displays joined data from VBAK (Header), VBAP (Item), and KNA1 (Customer).*
-![ALV Output](ALV2.png)
+![ALV Output](Alv2.png)
 
 ## 🛠 Technical Highlights
 * **ALV Framework:** Used function module `REUSE_ALV_GRID_DISPLAY`.
