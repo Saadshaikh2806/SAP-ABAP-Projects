@@ -79,6 +79,46 @@
 
 ```
 
+# Material Master Validation Enhancement (BADI)
+
+## 📋 Project Overview
+**Objective:** Enforce business rules during the Material Master creation process (Transaction `MM01`) to ensure master data consistency.
+**Requirement:** The business required a restriction to prevent the usage of specific Units of Measure (e.g., 'KG') for certain material types to align with inventory standards.
+
+## 📸 Implementation & Testing
+
+### 1. BADI Implementation (SE19)
+*Created a custom implementation `ZSAAD_MAT_CHECK` for the standard SAP definition `BADI_MATERIAL_CHECK`.*
+![BADI Configuration](BADI1.png)
+
+### 2. Logic Implementation
+*Added ABAP logic inside the `CHECK_DATA` method to validate the `Base Unit of Measure` field before saving.*
+![ABAP Logic](BADI2.png)
+
+### 3. Real-Time Validation (MM01)
+*Testing the enhancement: The system triggers a hard error message ("Unit of Measure KG is not allowed") when the user attempts to save invalid data, successfully preventing the transaction.*
+![Error Message](BADI3.png)
+
+## 🛠 Technical Highlights
+* **Enhancement Technique:** Implemented a **Classic BADI** (Business Add-In).
+* **Standard Object:** Used the SAP standard definition **`BADI_MATERIAL_CHECK`**.
+* **Method Logic:** Utilized the **`CHECK_DATA`** method which triggers during the PAI (Process After Input) phase of the transaction.
+* **Error Handling:** Used a custom Message Class (`zmsg_27`) to display a standard error message (`Type 'E'`), which stops the transaction flow until corrected.
+
+### 💻 Code Snippet: Validation Logic
+*The validation logic ensuring `MEINS` (Unit of Measure) compliance:*
+```abap
+  METHOD IF_EX_BADI_MATERIAL_CHECK~CHECK_DATA.
+    
+    " Check if Base Unit of Measure is KG
+    IF wmara-meins = 'KG'.
+      " Trigger Error Message from Custom Class
+      MESSAGE E000(zmsg_27). 
+    ENDIF.
+
+  ENDMETHOD.
+```
+
 ---
 *Developed by Saad Shaikh | SAP ABAP Fresher*
 
