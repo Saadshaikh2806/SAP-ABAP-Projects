@@ -35,21 +35,25 @@ PERFORM DISPAY_ALV.
 START-OF-SELECTION.
 
 FORM SELECT.
-  SELECT KNA1-NAME1,
-         VBAK-VBELN,
-         VBAK-AUART,
-         VBAK-KUNNR,
-         VBAK-ERNAM,
-         VBAK-ERDAT,
-         VBAP-NETWR
-    FROM VBAK INNER JOIN VBAP
-      ON VBAK-VBELN = VBAP-VBELN
-     INNER JOIN KNA1 ON KNA1-KUNNR = VBAK-KUNNR
-    INTO TABLE @IT_SALES
-    WHERE VBAK-VKORG IN @S_VKORG
-      AND VBAK-ERDAT IN @S_ERDAT
-      AND VBAK-AUART IN @S_AUART
-      AND VBAK-KUNNR IN @S_KUNNR.
+SELECT kna1~name1,
+       vbak~vbeln,
+       vbap~matnr,
+       vbak~auart,
+       vbak~kunnr,
+       vbak~ernam,
+       vbak~erdat,
+       vbap~netwr
+  FROM vbak
+  INNER JOIN vbap
+    ON vbak~vbeln = vbap~vbeln
+  INNER JOIN kna1
+    ON kna1~kunnr = vbak~kunnr
+  INTO TABLE @it_sales
+  WHERE vbak~vkorg IN @s_vkorg
+    AND vbak~erdat IN @s_erdat
+    AND vbak~auart IN @s_auart
+    AND vbak~kunnr IN @s_kunnr.
+
 
   IF IT_SALES IS INITIAL.
     MESSAGE 'NO DATA FETCHED' TYPE 'I'.
